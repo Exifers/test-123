@@ -98,6 +98,17 @@ function App() {
         }
     }
 
+    const handleAddFolder = async () => {
+        await setFolders([
+            ...folders!,
+            {
+                name: (Math.random() * 10000).toString(),
+                id: (Math.random() * 10000).toString(),
+                images: []
+            }
+        ])
+    }
+
     return (
         <div>
             <h1>Image Background Remover</h1>
@@ -117,6 +128,7 @@ function App() {
                                 style={getListStyle(snapshot.isDraggingOver)}
                                 {...provided.droppableProps}
                             >
+                                <span>{name}</span>
                                 {
                                     images.map((image, index) => (
                                         <Draggable
@@ -145,6 +157,9 @@ function App() {
                     </Droppable>
                 ))}
             </DragDropContext>
+            {folders?.length && folders?.length > 0 && (
+                <button type="button" onClick={handleAddFolder}>Add folder</button>
+            )}
         </div>
     )
 }

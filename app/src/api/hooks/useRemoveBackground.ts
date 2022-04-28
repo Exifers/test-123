@@ -9,7 +9,7 @@ import {LS_FOLDERS} from "../localStorageConstants";
 
 const BASE64_IMAGE_HEADER = 'data:image/png;base64,'
 
-const addToFolders = (prev?: Array<Folder>, image: Image) => {
+const addToFolders = (prev: Array<Folder> | undefined, image: Image) => {
     if (prev === undefined) {
         return [{id: 'unnamed', name: 'unnamed', images: [image]}]
     }
