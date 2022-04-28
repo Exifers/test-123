@@ -1,1 +1,1 @@
-export const LS_IMAGES = 'images'
+export const LS_FOLDERS = 'folders'

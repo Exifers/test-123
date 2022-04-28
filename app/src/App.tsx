@@ -1,9 +1,9 @@
-import React, {CSSProperties, Dispatch, SetStateAction, useState} from 'react'
+import React, {CSSProperties, useState} from 'react'
 import {AddButton} from "./components/AddButton";
 import {useRemoveBackground} from "./api/hooks/useRemoveBackground";
-import {useImages} from "./api/hooks/useImages";
 import {DragDropContext, Draggable, DraggingStyle, Droppable, DropResult, NotDraggingStyle} from "react-beautiful-dnd";
 import {Image} from "./api/types";
+import {useFolders} from "./api/hooks/useFolders";
 
 const grid = 8;
 
@@ -37,12 +37,6 @@ const reorder = (list, startIndex, endIndex) => {
     return result;
 };
 
-interface Folder {
-    id: string,
-    name: string,
-    images: Array<Image>,
-}
-
 const move = (source, destination, droppableSource, droppableDestination) => {
     const sourceClone = Array.from(source);
     const destClone = Array.from(destination);
@@ -57,17 +51,12 @@ const move = (source, destination, droppableSource, droppableDestination) => {
     return result;
 };
 
-const useFolders = (): [Array<Folder>, Dispatch<SetStateAction<Array<Folder>>>] => {
-    const initial = [{name: 'unnamed', id: '1', images: [{src: 'toto', id: 'someId'}]}, {name: 'other', id: '2', images: []}]
-    const [folders, setFolders] = useState<Array<Folder>>(initial)
-    return [folders, setFolders]
-}
-
 function App() {
+    // current file in form
     const [file, setFile] = useState<File | undefined>(undefined)
     const removeBackgroundMutation = useRemoveBackground()
-    const {data: images} = useImages()
-    const [state, setState] = useFolders()
+
+    const [{data: folders}, setFolders] = useFolders()
 
     const handleRemoveBackground = () => {
         if (file !== undefined) {
@@ -75,7 +64,7 @@ function App() {
         }
     }
 
-    const onDragEnd = (result: DropResult) => {
+    const onDragEnd = async (result: DropResult) => {
         const { source, destination } = result;
 
         // dropped outside the list
@@ -87,25 +76,25 @@ function App() {
 
         if (sInd === dInd) {
             const items = reorder(
-                state.find(f => f.id === sInd)!.images,
+                folders!.find(f => f.id === sInd)!.images,
                 source.index,
                 destination.index
             ) as Array<Image>;
-            const newState = state.map(f => f.id === sInd ? {...f, images: items} : f)
-            setState(newState);
+            const newState = folders!.map(f => f.id === sInd ? {...f, images: items} : f)
+            await setFolders(newState);
         } else {
             const result = move(
-                state.find(f => f.id === sInd)!.images,
-                state.find(f => f.id === dInd)!.images,
+                folders!.find(f => f.id === sInd)!.images,
+                folders!.find(f => f.id === dInd)!.images,
                 source,
                 destination,
             );
-            const newState = state.map(f =>
+            const newState = folders!.map(f =>
                 f.id === sInd ? {...f, images: result[sInd]}
                 : f.id === dInd ? {...f, images: result[dInd]}
                 : f
             )
-            setState(newState);
+            await setFolders(newState);
         }
     }
 
@@ -120,7 +109,7 @@ function App() {
             </button>
             {removeBackgroundMutation.isLoading && <span>Loading ...</span>}
             <DragDropContext onDragEnd={onDragEnd}>
-                {state.map(({name, id, images}) => (
+                {folders?.map(({name, id, images}) => (
                     <Droppable key={id} droppableId={id}>
                         {(provided, snapshot) => (
                             <div

@@ -2,20 +2,28 @@ import axios, {AxiosError} from 'axios';
 import loadImage from 'blueimp-load-image';
 import {useMutation, useQueryClient} from "react-query";
 import {PHOTOROOM_API_SEGMENT_URL} from "../constants";
-import localforage from "localforage";
-import {LS_IMAGES} from "../localStorageConstants";
-import {Image} from "../types";
-import {IMAGES} from "../queryKeysConstants";
+import {Folder, Image} from "../types";
+import {FOLDERS} from "../queryKeysConstants";
+import * as localforage from "localforage";
+import {LS_FOLDERS} from "../localStorageConstants";
 
 const BASE64_IMAGE_HEADER = 'data:image/png;base64,'
 
-const saveToLocalStorage = async (image: Image) => {
-    const images = await localforage.getItem<Array<Image>>(LS_IMAGES) || []
-    await localforage.setItem<Array<Image>>(LS_IMAGES, [
-        ...images,
-        image,
-    ])
+const addToFolders = (prev?: Array<Folder>, image: Image) => {
+    if (prev === undefined) {
+        return [{id: 'unnamed', name: 'unnamed', images: [image]}]
+    }
+
+    if (!prev.find(f => f.id === 'unnamed')) {
+        return [
+            ...prev,
+            {id: 'unnamed', name: 'unnamed', images: [image]}
+        ]
+    }
+
+    return prev.map(f => f.id === 'unnamed' ? {...f, images: [...f.images, image]} : f)
 }
+
 
 export const useRemoveBackground = () => {
     const queryClient = useQueryClient()
@@ -38,17 +46,14 @@ export const useRemoveBackground = () => {
             id: (Math.random() * 100000).toString(),
         }
 
-        // using the localstorage as a backend here
-        await saveToLocalStorage(noBackground)
+        // using localstorage as backend
+        const folders = await localforage.getItem<Array<Folder>>(LS_FOLDERS) || undefined
+        await localforage.setItem<Array<Folder>>(LS_FOLDERS, addToFolders(folders, noBackground))
 
         return noBackground
     }, {
         onSuccess: (image: Image) => {
-            // optimistic update
-            queryClient.setQueryData(IMAGES, (prev: Array<Image> | undefined) => [
-                image,
-                ...prev || [],
-            ])
+            queryClient.setQueryData(FOLDERS, (prev: Array<Folder> | undefined) => addToFolders(prev, image))
         }
     })
 }
