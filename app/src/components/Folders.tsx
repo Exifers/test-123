@@ -47,6 +47,13 @@ export const Folders: FC<Props> = ({ folders, setFolders }) => {
         }
     }
 
+    const handleRename = async (id: string) => {
+        await setFolders(folders.map(f => f.id === id ? {
+            ...f,
+            name: prompt('folder name') as string,
+        } : f))
+    }
+
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             {folders?.map(({name, id, images}) => (
@@ -81,6 +88,9 @@ export const Folders: FC<Props> = ({ folders, setFolders }) => {
                                     </Draggable>
                                 ))}
                             {provided.placeholder}
+                            {id !== 'unnamed' && (
+                                <button type="button" onClick={() => handleRename(id)}>Rename</button>
+                            )}
                         </div>
                     )}
                 </Droppable>
